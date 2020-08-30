@@ -1,0 +1,23 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+numpy = "*"
+#scipy = "==1.1"
+#tensorflow-gpu = "<2.0,>=1.0"
+Pillow = "*"
+torch = "*"
+streamlit = "*"
+pandas = "*"
+#matplotlib = "*"
+pudb = "*"
+torchvision = "*"
+sklearn = "*"
+tqdm = "*"
+
+[requires]
+python_version = "3.8.2"

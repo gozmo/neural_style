@@ -1,3 +1,12 @@
+*.jpg
+*.jpeg
+
+style_images/
+content_images/
+searches/
+experiments/
+tags
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

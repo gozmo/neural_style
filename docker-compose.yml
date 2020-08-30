@@ -1,0 +1,15 @@
+version: '2.3'
+services:
+  neural:
+    devices:
+    - "/dev/nvidia0:/dev/nvidia0"
+    build: .
+    ports:
+    - "8501:8501"
+    volumes:
+    - ./content_images:/content_images
+    - ./output_images:/output_images
+    - ./style_images:/style_images
+    - ./experiments:/experiments
+    - ./search:/search
+
