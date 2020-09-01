@@ -62,9 +62,13 @@ def start_parameter_search(search_config, search_space):
         parsed_search_space[parameter_name] = [parse(x) for x in parameter_space_string.split(",")]
 
 
+    
+    #TODO: Change this to random parameter search
     pg = ParameterGrid(parsed_search_space)
     for idx, config_setup in tqdm(list(enumerate(pg))):
         __start_search_experiment(idx, config_setup, search_config)
+        if search_config["initial_searches"] < idx:
+            break
 
 
 def read_image(image_path):
@@ -152,7 +156,7 @@ def annotated_search(search_name):
     prior_y = []
     for parameter_run in parameter_runs:
         run_config  = read_parameter_config(search_name, parameter_run)
-        prior_x.append(list(run_config.values()))
+        prior_x.append([value for name, value in sorted(run_config.items())])
         experiment_root = f"{Directories.SEARCHES}/{search_name}/experiments/{parameter_run}" 
         run_user = read_user(experiment_root)
         prior_y.append( 1.0 if run_user["rating"] == "good" else 0.0)
@@ -166,19 +170,17 @@ def annotated_search(search_name):
         return 1.0
     
     search_bounds = []
-    for bound_str in search_space.values():
-        a = [parse(elem) for elem in bound_str.split(",")]
-        bound = Categorical(a)
+    for parameter_name, parameter_space_str in sorted(search_space.items()):
+        parameter_space = [parse(elem) for elem in parameter_space_str.split(",")]
+        bound = Categorical(parameter_space)
         search_bounds.append(bound)
 
+    pu.db
     res = gp_minimize(f,                  # the function to minimize
 		      search_bounds,      # the bounds on each dimension of x
-		      acq_func="EI",      # the acquisition function
 		      n_calls=10,         # the number of evaluations of f
-		      n_random_starts=10,  # the number of random initialization points
-		      noise=0.1**2,       # the noise level (optional)
-		      random_state=1234,
-		      x0=prior_x,
-		      y0=prior_y)   # the random seed
+                      n_random_starts=10)
+		      # x0=prior_x,
+		      # y0=prior_y)   # the random seed
 
 

@@ -18,7 +18,8 @@ pudb = "*"
 torchvision = "*"
 sklearn = "*"
 tqdm = "*"
-scikit-optimize = "*"
+scikit-optimize = "0.7.4"
+scikit-learn = "==0.20"
 
 [requires]
-python_version = "3.8.2"
+python_version = "3.7.5"
