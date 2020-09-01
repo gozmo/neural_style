@@ -21,6 +21,7 @@ def search():
     experiment_name = st.text_input("Experiment name")
     experiment_name = f"{datetime.now()}-{experiment_name}"
     config['experiment_name'] = experiment_name
+    config["initial_searches"] = st.number_input("Initial search", 10)
 
     content_image_name = st.selectbox("Content image", list_content_images())
     content_image_path = path.abspath(f"{Directories.CONTENT}/{content_image_name}")

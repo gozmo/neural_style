@@ -4,7 +4,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from PIL import Image
-import matplotlib.pyplot as plt
 
 import torchvision.transforms as transforms
 import torchvision.models as models
@@ -12,6 +11,7 @@ from torchvision.utils import save_image
 
 import copy
 from src.utils import cut_image
+from tqdm import tqdm
 
 
 
@@ -140,8 +140,7 @@ def run_style_transfer(device, cnn, normalization_mean, normalization_std,
         normalization_mean, normalization_std, style_img, content_img)
     optimizer = get_input_optimizer(input_img, learning_rate)
 
-    run = [0]
-    while run[0] <= num_steps:
+    for x in tqdm(range(num_steps)):
 
         def closure():
             input_img.data.clamp_(0, 1)
@@ -162,7 +161,6 @@ def run_style_transfer(device, cnn, normalization_mean, normalization_std,
             loss = style_score + content_score
             loss.backward()
 
-            run[0] += 1
 
             return style_score + content_score
 

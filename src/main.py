@@ -1,5 +1,6 @@
 from tqdm import tqdm
 from PIL import Image
+from skopt import gp_minimize
 import os
 from src.constants import Directories
 import json
@@ -11,18 +12,51 @@ from src.config import config_template
 from sklearn.model_selection import ParameterGrid
 from src import style
 from src.utils import parse
+from skopt.space import Categorical
 
 
+#TODO: merge parameter search and training, setup is similar
 def start_training(config):
-    os.makedirs(f"{Directories.EXPERIMENTS}/{config['experiment_name']}/checkpoints", exist_ok=True)
-    with open(f"{Directories.EXPERIMENTS}/{config['experiment_name']}/config.json", "w") as f:
+    experiment_root = f"{Directories.EXPERIMENTS}/{config['experiment_name']}"
+    config["experiment_root"] = experiment_root
+    os.makedirs(f"{experiment_root}/checkpoints", exist_ok=True)
+    with open(f"{experiment_root}/config.json", "w") as f:
         f.write(json.dumps(config))
+    with open(f"{experiment_root}/user.json", "w") as f:
+        f.write(json.dumps({}))
 
     style.run(config)
 
 
 
-def start_parameter_search(config, search_space):
+def __start_search_experiment(idx, config_setup, search_config):
+    experiment_root = f"{Directories.SEARCHES}/{search_config['experiment_name']}/experiments/{idx}" 
+    checkpoint_dir = f"{experiment_root}/checkpoints"
+    os.makedirs(checkpoint_dir, exist_ok=True)
+
+    with open(f"{experiment_root}/config.json", "w") as f:
+        f.write(json.dumps(config_setup))
+    with open(f"{experiment_root}/user.json", "w") as f:
+        f.write(json.dumps({"rating": "unrated"}))
+
+    config_setup.update(search_config)
+
+    config_setup["experiment_root"] = experiment_root
+    
+
+    output_file = f"{experiment_root}/output.jpg"
+    config_setup["output_image_name"] = output_file
+    config_setup["checkpoint_path"] = f"{checkpoint_dir}/"
+
+    style.run(config_setup)
+
+def start_parameter_search(search_config, search_space):
+    search_root = f"{Directories.SEARCHES}/{search_config['experiment_name']}"
+    os.makedirs(search_root)
+    with open(f"{search_root}/search_config.json", "w") as f:
+        f.write(json.dumps(search_config))
+    with open(f"{search_root}/search_space.json", "w") as f:
+        f.write(json.dumps(search_space))
     parsed_search_space = {}
     for parameter_name, parameter_space_string in search_space.items():
         parsed_search_space[parameter_name] = [parse(x) for x in parameter_space_string.split(",")]
@@ -30,18 +64,7 @@ def start_parameter_search(config, search_space):
 
     pg = ParameterGrid(parsed_search_space)
     for idx, config_setup in tqdm(list(enumerate(pg))):
-        output_dir = f"{Directories.SEARCHES}/{config['experiment_name']}/experiments/{idx}/" 
-        checkpoint_dir = f"{output_dir}/checkpoints"
-        os.makedirs(checkpoint_dir, exist_ok=True)
-        output_file = f"{output_dir}/output.jpg"
-        os.makedirs(output_dir, exist_ok=True)
-        config_setup.update(config)
-        config_setup["output_image_name"] = output_file
-        config_setup["checkpoint_path"] = f"{checkpoint_dir}/cp_%d.jpg"
-        with open(f"{output_dir}/config.json", "w") as f:
-            f.write(json.dumps(config_setup))
-
-        style.run(config_setup)
+        __start_search_experiment(idx, config_setup, search_config)
 
 
 def read_image(image_path):
@@ -98,3 +121,64 @@ def read_config(experiment_name):
 
     return config_dict
     
+def read_user(experiment_root):
+    path = f"{experiment_root}/user.json"
+    with open(path, "r") as f:
+        user_dict = json.load(f)
+
+    return user_dict
+
+
+def set_rating(experiment_root, rating):
+    user = read_user(experiment_root)
+    user["rating"] = rating
+    path = f"{experiment_root}/user.json"
+
+    with open(path, "w") as f:
+        f.write(json.dumps(user))
+
+def read_search_config(search_name):
+    search_root = f"{Directories.SEARCHES}/{search_name}"
+    with open(f"{search_root}/search_config.json", "r") as f:
+        config = json.load(f)
+    with open(f"{search_root}/search_space.json", "r") as f:
+        search_space = json.load(f)
+    return config, search_space
+
+def annotated_search(search_name):
+    search_config, search_space = read_search_config(search_name)
+    parameter_runs = list_parameter_runs(search_name)
+    prior_x = []
+    prior_y = []
+    for parameter_run in parameter_runs:
+        run_config  = read_parameter_config(search_name, parameter_run)
+        prior_x.append(list(run_config.values()))
+        experiment_root = f"{Directories.SEARCHES}/{search_name}/experiments/{parameter_run}" 
+        run_user = read_user(experiment_root)
+        prior_y.append( 1.0 if run_user["rating"] == "good" else 0.0)
+
+    idx = len(parameter_runs)
+    def f(config_values):
+        config = dict(zip(search_space.keys(), config_values))
+        __start_search_experiment(idx, config, search_config)
+
+        idx += 1
+        return 1.0
+    
+    search_bounds = []
+    for bound_str in search_space.values():
+        a = [parse(elem) for elem in bound_str.split(",")]
+        bound = Categorical(a)
+        search_bounds.append(bound)
+
+    res = gp_minimize(f,                  # the function to minimize
+		      search_bounds,      # the bounds on each dimension of x
+		      acq_func="EI",      # the acquisition function
+		      n_calls=10,         # the number of evaluations of f
+		      n_random_starts=10,  # the number of random initialization points
+		      noise=0.1**2,       # the noise level (optional)
+		      random_state=1234,
+		      x0=prior_x,
+		      y0=prior_y)   # the random seed
+
+
