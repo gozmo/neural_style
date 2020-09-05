@@ -13,6 +13,10 @@ from sklearn.model_selection import ParameterGrid
 from src import style
 from src.utils import parse
 from skopt.space import Categorical
+from skopt.utils import use_named_args 
+import numpy as np
+from src.utils import convert_to_serializable
+from src.utils import parse_search_string 
 
 
 #TODO: merge parameter search and training, setup is similar
@@ -53,23 +57,36 @@ def __start_search_experiment(idx, config_setup, search_config):
 def start_parameter_search(search_config, search_space):
     search_root = f"{Directories.SEARCHES}/{search_config['experiment_name']}"
     os.makedirs(search_root)
+    os.makedirs(search_root + "/experiments")
     with open(f"{search_root}/search_config.json", "w") as f:
         f.write(json.dumps(search_config))
     with open(f"{search_root}/search_space.json", "w") as f:
         f.write(json.dumps(search_space))
-    parsed_search_space = {}
-    for parameter_name, parameter_space_string in search_space.items():
-        parsed_search_space[parameter_name] = [parse(x) for x in parameter_space_string.split(",")]
 
+    key_order = list(search_space.keys())
+    search_bounds = []
+    for parameter_name in key_order:
+        parameter_space_str = search_space[parameter_name]
+        bound = parse_search_string(parameter_space_str, parameter_name)
+        search_bounds.append(bound)
 
     
-    #TODO: Change this to random parameter search
-    pg = ParameterGrid(parsed_search_space)
-    for idx, config_setup in tqdm(list(enumerate(pg))):
-        __start_search_experiment(idx, config_setup, search_config)
-        if search_config["initial_searches"] < idx:
-            break
+    @use_named_args(dimensions=search_bounds)
+    def f(content_weight, iterations, learning_rate, style_weight):
+        config = {"iterations": int(iterations),
+                  "learning_rate": float(learning_rate),
+                  "style_weight": int(style_weight),
+                  "content_weight": int(content_weight)}
 
+        idx = get_experiment_index(search_config)
+        __start_search_experiment(idx, config, search_config)
+
+        return 1.0
+    
+    res = gp_minimize(f,                  # the function to minimize
+		      search_bounds,      # the bounds on each dimension of x
+		      n_calls=5,         # the number of evaluations of f
+                      n_random_starts=5)
 
 def read_image(image_path):
     image = Image.open(image_path)
@@ -149,38 +166,55 @@ def read_search_config(search_name):
         search_space = json.load(f)
     return config, search_space
 
-def annotated_search(search_name):
+def get_experiment_index(search_config):
+    experiments_root = f"{Directories.SEARCHES}/{search_config['experiment_name']}/experiments/" 
+    
+    idx = 2 + len(os.listdir(experiments_root))
+    return idx
+
+
+def annotated_search(search_name, optimize_runs, random):
     search_config, search_space = read_search_config(search_name)
+    key_order = list(search_space.keys())
     parameter_runs = list_parameter_runs(search_name)
     prior_x = []
     prior_y = []
     for parameter_run in parameter_runs:
         run_config  = read_parameter_config(search_name, parameter_run)
-        prior_x.append([value for name, value in sorted(run_config.items())])
+        #This is a problem, need to sorting order for parameters
+        prior_x.append([run_config[key] for key in key_order])
         experiment_root = f"{Directories.SEARCHES}/{search_name}/experiments/{parameter_run}" 
         run_user = read_user(experiment_root)
-        prior_y.append( 1.0 if run_user["rating"] == "good" else 0.0)
+        prior_y.append( 0.0 if run_user["rating"] == "good" else 1.0)
 
-    idx = len(parameter_runs)
-    def f(config_values):
-        config = dict(zip(search_space.keys(), config_values))
-        __start_search_experiment(idx, config, search_config)
 
-        idx += 1
-        return 1.0
-    
     search_bounds = []
-    for parameter_name, parameter_space_str in sorted(search_space.items()):
-        parameter_space = [parse(elem) for elem in parameter_space_str.split(",")]
-        bound = Categorical(parameter_space)
+    for parameter_name in key_order:
+        parameter_space_str = search_space[parameter_name]
+        bound = parse_search_string(parameter_space_str, parameter_name)
         search_bounds.append(bound)
 
-    pu.db
+    @use_named_args(dimensions=search_bounds)
+    def f(content_weight, iterations, learning_rate, style_weight):
+        config = {"iterations": int(iterations),
+                  "learning_rate": float(learning_rate),
+                  "style_weight": int(style_weight),
+                  "content_weight": int(content_weight)}
+
+        idx = get_experiment_index(search_config)
+        __start_search_experiment(idx, config, search_config)
+
+        return 0.5
+    
+
+    calls = optimize_runs + random
     res = gp_minimize(f,                  # the function to minimize
 		      search_bounds,      # the bounds on each dimension of x
-		      n_calls=10,         # the number of evaluations of f
-                      n_random_starts=10)
-		      # x0=prior_x,
-		      # y0=prior_y)   # the random seed
+		      n_calls=calls,         # the number of evaluations of f
+                      n_random_starts=random,
+		      x0=prior_x,
+		      y0=prior_y)   # the random seed
+
+    f(res.x)
 
 

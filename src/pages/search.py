@@ -14,10 +14,11 @@ from os import path
 from src.utils import cut_image
 from src.utils import resize_image
 from datetime import datetime
+from collections import OrderedDict
 
 def search():
 
-    config = dict()
+    config = OrderedDict()
     experiment_name = st.text_input("Experiment name")
     experiment_name = f"{datetime.now()}-{experiment_name}"
     config['experiment_name'] = experiment_name
@@ -47,7 +48,7 @@ def search():
 
     st.markdown("# Search space")
 
-    search_config = {} 
+    search_config = OrderedDict()
     search_config['iterations'] = st.text_input("iterations", search_config_template["iterations"])
     search_config["learning_rate"] = st.text_input("learning_rate", search_config_template["learning_rate"])
     search_config["style_weight"] =st.text_input("style_weight", search_config_template["style_weight"])

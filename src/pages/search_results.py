@@ -39,8 +39,10 @@ def search_results():
     if st.checkbox("Show bad"):
         __show_rated_images(parameter_runs, search_run, "bad")
 
+    optimize_search = st.slider("Optimize runs", 0, 20, value = 5)
+    random = st.slider("Random runs", 0, 20, value = 0)
     if st.button("ReRun"):
-        main.annotated_search(search_run)
+        main.annotated_search(search_run, optimize_search, random)
 
 
 
