@@ -16,8 +16,9 @@ from tqdm import tqdm
 
 
 
-def image_loader(image_name, loader, device):
+def image_loader(image_name, loader, device, size):
     image = Image.open(image_name)
+    # image = image.resize(size=(size, size), resample=3)
     image = cut_image(image)
     image = loader(image).unsqueeze(0)
     return image.to(device, torch.float)
@@ -185,8 +186,8 @@ def run(config):
         transforms.ToTensor()])  # transform it into a torch tensor
 
 
-    style_img = image_loader(config["style_image_name"], loader, device)
-    content_img = image_loader(config["content_image_name"], loader, device)
+    style_img = image_loader(config["style_image_name"], loader, device, imsize)
+    content_img = image_loader(config["content_image_name"], loader, device, imsize)
 
     cnn = models.vgg19(pretrained=True).features.to(device).eval()
 

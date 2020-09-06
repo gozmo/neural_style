@@ -1,8 +1,7 @@
 import streamlit as st
-from src.main import list_experiments
-from src.main import read_config
-from src.main import read_image
-from src.main import list_checkpoint_images
+from src.io import list_experiments
+from src.io import read_config
+from src.io import read_image
 import pandas as pd
 
 def results():

@@ -1,17 +1,17 @@
-import streamlit as st
-from src.main import list_style_images
-from src.main import list_content_images
-from src.main import read_image
-from src.main import read_config
-from src.main import start_training
-from src.main import list_experiments
-from src.main import download_image 
+from datetime import datetime
+from os import path
 from src.config import config_template as ct
 from src.constants import Directories
-from os import path
-from datetime import datetime
+from src.io import list_content_images
+from src.io import list_experiments
+from src.io import list_style_images
+from src.io import read_config
+from src.io import read_image
+from src.main import download_image 
+from src.main import start_training
 from src.utils import cut_image
 from src.utils import resize_image
+import streamlit as st
 
 
 def train():
@@ -35,7 +35,7 @@ def train():
     content_image_path = path.abspath(f"{Directories.CONTENT}/{content_image_name}")
     content_image = read_image(content_image_path)
     content_image = cut_image(content_image)
-    content_image = resize_image(content_image)
+    content_image = resize_image(content_image, 500,500)
     st.image(content_image)
 
 
@@ -44,7 +44,7 @@ def train():
     style_image_path = path.abspath(f"{Directories.STYLES}/{style_image_name}")
     style_image = read_image(style_image_path)
     style_image = cut_image(style_image)
-    style_image = resize_image(style_image)
+    style_image = resize_image(style_image, 500, 500)
     st.image(style_image)
 
     output_image_name = path.abspath(f"{Directories.EXPERIMENTS}/{experiment_name}/{experiment_name}.jpg")

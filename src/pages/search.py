@@ -1,12 +1,12 @@
 import streamlit as st
 from src.config import search_config_template
 from src.config import config_template
-from src.main import list_style_images
-from src.main import list_content_images
-from src.main import read_image
-from src.main import read_config
+from src.io import list_style_images
+from src.io import list_content_images
+from src.io import read_image
+from src.io import read_config
 from src.main import start_parameter_search
-from src.main import list_experiments
+from src.io import list_experiments
 from src.main import download_image 
 from src.config import config_template
 from src.constants import Directories
@@ -28,7 +28,7 @@ def search():
     content_image_path = path.abspath(f"{Directories.CONTENT}/{content_image_name}")
     content_image = read_image(content_image_path)
     content_image = cut_image(content_image)
-    content_image = resize_image(content_image)
+    content_image = resize_image(content_image, 500, 500)
     st.image(content_image)
     config['content_image_name'] = content_image_path
 
@@ -36,7 +36,7 @@ def search():
     style_image_path = path.abspath(f"{Directories.STYLES}/{style_image_name}")
     style_image = read_image(style_image_path)
     style_image = cut_image(style_image)
-    style_image = resize_image(style_image)
+    style_image = resize_image(style_image, 500, 500)
     st.image(style_image)
     config['style_image_name'] = style_image_path
 

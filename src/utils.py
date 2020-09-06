@@ -11,11 +11,9 @@ def cut_image(image):
         s = h
     return image.crop((0,0,s,s))
 
-def resize_image(image):
+def resize_image(image, new_w, new_h):
     w, h = image.size
     
-    new_w = 500
-    new_h = 500
     return image.resize((new_w, new_h))
 
 def parse(elem):
