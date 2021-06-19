@@ -131,18 +131,30 @@ def get_style_model_and_losses(device,
 
 
 
-def get_input_optimizer(input_img, learning_rate):
-    optimizer = optim.LBFGS([input_img.requires_grad_()], lr=learning_rate)
+def get_input_optimizer(input_img, learning_rate, history_size, max_iter):
+    optimizer = optim.LBFGS([input_img.requires_grad_()], 
+                            lr=learning_rate,
+                            history_size=history_size,
+                            max_iter=max_iter)
     return optimizer
 
 
-def run_style_transfer(device, cnn, normalization_mean, normalization_std,
-                       content_img, style_img, input_img, num_steps=300,
-                       style_weight=1000000, content_weight=1, learning_rate=1):
+def run_style_transfer(config,
+                       device, 
+                       cnn,
+                       normalization_mean,
+                       normalization_std,
+                       content_img,
+                       style_img,
+                       input_img,
+                       num_steps=300,
+                       style_weight=1000000,
+                       content_weight=1,
+                       learning_rate=1):
     """Run the style transfer."""
     model, style_losses, content_losses = get_style_model_and_losses(device, cnn,
         normalization_mean, normalization_std, style_img, content_img)
-    optimizer = get_input_optimizer(input_img, learning_rate)
+    optimizer = get_input_optimizer(input_img, learning_rate, config["history_size"], config["max_iter"])
 
     for x in tqdm(range(num_steps)):
 
@@ -169,6 +181,9 @@ def run_style_transfer(device, cnn, normalization_mean, normalization_std,
             return style_score + content_score
 
         optimizer.step(closure)
+        output = input_img.clone().detach()
+        output.data.clamp_(0, 1)
+        save_image(output, config["checkpoint_path"] + f"/{x}.jpg")
 
     input_img.data.clamp_(0, 1)
 
@@ -196,7 +211,8 @@ def run(config):
 
     input_img = content_img.clone()
 
-    output = run_style_transfer(device,
+    output = run_style_transfer(config,
+                                device,
                                 cnn, 
                                 cnn_normalization_mean,
                                 cnn_normalization_std,

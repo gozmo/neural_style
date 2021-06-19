@@ -43,7 +43,7 @@ def search():
 
     st.markdown("# Static Parameters")
 
-    config['image_width'] = st.number_input("Image width", min_value=100, max_value=5000, value=config_template["image_width"], step=50)
+    config['image_width'] = st.number_input("Image width", min_value=100, max_value=1500, value=config_template["image_width"], step=50)
 
 
     st.markdown("# Search space")
@@ -51,6 +51,8 @@ def search():
     search_config = OrderedDict()
     search_config['iterations'] = st.text_input("iterations", search_config_template["iterations"])
     search_config["learning_rate"] = st.text_input("learning_rate", search_config_template["learning_rate"])
+    search_config["history_size"] = st.text_input("history_size", search_config_template["history_size"])
+    search_config["max_iter"] = st.text_input("max_iter", search_config_template["max_iter"])
     search_config["style_weight"] =st.text_input("style_weight", search_config_template["style_weight"])
     search_config["content_weight"] =st.text_input("content_weight", search_config_template["content_weight"])
 

@@ -39,15 +39,6 @@ def __show_rated_images(parameter_runs, search_run, rating):
                 config_frame = pd.DataFrame.from_dict(config, orient="index")
                 st.table(config_frame)
 
-def __annotate_all_unrated_as_bad(parameter_runs, search_run):
-    if st.button(f"Annotate the rest as bad"):
-        for parameter_run in parameter_runs:
-            config = read_parameter_config(search_run, parameter_run)
-            experiment_root = f"{Directories.SEARCHES}/{search_run}/experiments/{parameter_run}" 
-            user = read_user(experiment_root)
-
-            if user["rating"] == "unrated":
-                set_rating(experiment_root, "bad")
 
 def __plot_parameters(parameter_runs, search_run):
     book_keeping = defaultdict(list)
@@ -75,7 +66,6 @@ def search_results():
 
     if st.checkbox("Show unrated"):
         __show_rated_images(parameter_runs, search_run, "unrated")
-        __annotate_all_unrated_as_bad(parameter_runs, search_run)
     if st.checkbox("Show good"):
         __show_rated_images(parameter_runs, search_run, "good")
     if st.checkbox("Show bad"):
@@ -83,8 +73,9 @@ def search_results():
 
     optimize_search = st.slider("Optimize runs", 0, 150, value = 5)
     random = st.slider("Random runs", 0, 150, value = 0)
+    new_width = st.number_input("Image width", min_value=100, max_value=1500, value=500, step=50)
     if st.button("ReRun"):
-        annotated_search(search_run, optimize_search, random)
+        annotated_search(search_run, optimize_search, random, new_width)
 
     if st.checkbox("Plot parameters"):
         __plot_parameters(parameter_runs, search_run)

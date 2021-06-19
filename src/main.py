@@ -22,7 +22,9 @@ import urllib.request
 def start_training(config):
     experiment_root = f"{Directories.EXPERIMENTS}/{config['experiment_name']}"
     config["experiment_root"] = experiment_root
-    os.makedirs(f"{experiment_root}/checkpoints", exist_ok=True)
+    checkpoint_dir = f"{experiment_root}/checkpoints"
+    config["checkpoint_dir"] = checkpoint_dir
+    os.makedirs(checkpoint_dir, exist_ok=True)
     with open(f"{experiment_root}/config.json", "w") as f:
         f.write(json.dumps(config))
     with open(f"{experiment_root}/user.json", "w") as f:
@@ -73,11 +75,13 @@ def start_parameter_search(search_config, search_space):
     n_calls = search_config["initial_searches"]
     progress_bar = tqdm(total=n_calls)
     @use_named_args(dimensions=search_bounds)
-    def f(content_weight, iterations, learning_rate, style_weight):
+    def f(content_weight, history_size, iterations, learning_rate, max_iter, style_weight):
         config = {"iterations": int(iterations),
                   "learning_rate": float(learning_rate),
                   "style_weight": int(style_weight),
-                  "content_weight": int(content_weight)}
+                  "content_weight": int(content_weight),
+                  "history_size": int(history_size),
+                  "max_iter": int(max_iter)}
 
         idx = search_io.get_experiment_index(search_config)
         __start_search_experiment(idx, config, search_config)
@@ -99,7 +103,7 @@ def download_image(image_type, image_url, image_name):
         data = response.read()
         out_file.write(data)
 
-def annotated_search(search_name, optimize_runs, random):
+def annotated_search(search_name, optimize_runs, random, new_width):
     search_config, search_space = search_io.read_search_config(search_name)
     key_order = list(search_space.keys())
     parameter_runs = search_io.list_parameter_runs(search_name)
@@ -122,11 +126,14 @@ def annotated_search(search_name, optimize_runs, random):
     calls = optimize_runs + random
     progress_bar = tqdm(total=calls)
     @use_named_args(dimensions=search_bounds)
-    def f(content_weight, iterations, learning_rate, style_weight):
+    def f(content_weight, history_size, iterations, learning_rate, max_iter, style_weight):
         config = {"iterations": int(iterations),
                   "learning_rate": float(learning_rate),
                   "style_weight": int(style_weight),
-                  "content_weight": int(content_weight)}
+                  "content_weight": int(content_weight),
+                  "history_size": int(history_size),
+                  "max_iter": int(max_iter)}
+        search_config["image_width"] = new_width
 
         idx = search_io.get_experiment_index(search_config)
         __start_search_experiment(idx, config, search_config)

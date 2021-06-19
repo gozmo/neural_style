@@ -72,6 +72,8 @@ def train():
     config["iterations"] = st.number_input("Iterations", min_value=10, max_value=10000, value=config_template["iterations"], step=50)
     config["image_width"] = st.number_input("Image width", min_value=100, max_value=5000, value=config_template["image_width"], step=50)
     config["learning_rate"] = st.number_input("Learning rate", min_value=0.1, max_value=100.0, value=config_template["learning_rate"], step=0.1)
+    config["history_size"] = st.number_input("history_size", min_value=1, max_value=200, value=config_template["history_size"], step=1)
+    config["max_iter"] = st.number_input("max_iter", min_value=1, max_value=100, value=config_template["max_iter"], step=1)
     config["style_weight"] = st.number_input("Style weight", min_value=0, value=config_template["style_weight"])
     config["content_weight"] = st.number_input("Content weight", min_value=0, value=config_template["content_weight"])
 
